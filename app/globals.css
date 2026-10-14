@@ -38,6 +38,39 @@
   --machine-drop: 0 -6px 30px rgba(60, 50, 30, 0.14);
 }
 
+/* ---------- Retro mode: kraft paper (papel madera) and worn-ribbon ink ---------- */
+
+.desk.retro {
+  --ink: #2b1d11;
+  --ink-faint: rgba(43, 29, 17, 0.4);
+  --ink-shadow: 0 0 0.9px rgba(43, 29, 17, 0.75);
+  --paper-bg:
+    linear-gradient(to right, rgba(90, 60, 25, 0.16), transparent 4%, transparent 96%, rgba(90, 60, 25, 0.16)),
+    url("/papel-madera.jpg") top center / 1024px auto repeat;
+  --desk-bg: radial-gradient(ellipse at 50% 30%, #3a2c20, #17110c 70%);
+  --paper-shadow: 0 0 0 1px rgba(60, 35, 10, 0.25), 0 12px 40px rgba(0, 0, 0, 0.5);
+}
+
+.desk.retro[data-theme="light"] {
+  --desk-bg: linear-gradient(to bottom, #f7f1e6 60%, #ebe0cc);
+  --paper-shadow: 0 0 0 1px rgba(60, 35, 10, 0.18), 0 10px 30px rgba(80, 55, 20, 0.2);
+}
+
+/* Retro machine: worn black body; overrides the chosen machine style */
+.desk.retro:not(.machine-off)[data-machine] {
+  /* AI-generated photo (Flux 2 Pro via Comfy Cloud), darkened at the bottom so the controls stay legible */
+  --machine-bg:
+    linear-gradient(to bottom, transparent 55%, rgba(8, 7, 6, 0.85) 90%),
+    url("/maquina-retro.jpg") top center / cover no-repeat,
+    #0b0a09;
+  --machine-inset: inset 0 0 0 transparent;
+  --control: #b8a98c;
+  --control-strong: #eadcc0;
+  --control-border: rgba(234, 220, 192, 0.25);
+  --control-border-strong: rgba(234, 220, 192, 0.6);
+  --control-hover-bg: rgba(234, 220, 192, 0.06);
+}
+
 /* ---------- Machine styles (body color) ---------- */
 
 /* Controls sitting on a dark body */
@@ -187,9 +220,11 @@ body {
   min-height: calc(var(--paper-w) * 1.294);
   margin: 0 auto;
   padding: var(--paper-pad-top) var(--paper-pad-x) 120px;
-  background:
+  background: var(
+    --paper-bg,
     radial-gradient(ellipse at 20% 10%, rgba(255, 255, 255, 0.5), transparent 60%),
-    linear-gradient(to right, var(--paper-edge), var(--paper) 4%, var(--paper) 96%, var(--paper-edge));
+    linear-gradient(to right, var(--paper-edge), var(--paper) 4%, var(--paper) 96%, var(--paper-edge))
+  );
   box-shadow: var(--paper-shadow);
 }
 
@@ -220,7 +255,7 @@ textarea.type-text {
   background: transparent;
   color: var(--ink);
   caret-color: var(--ink);
-  text-shadow: 0 0 0.6px rgba(35, 32, 28, 0.55);
+  text-shadow: var(--ink-shadow, 0 0 0.6px rgba(35, 32, 28, 0.55));
 }
 
 textarea.type-text::placeholder {
@@ -267,8 +302,6 @@ textarea.type-text::placeholder {
 /* ---------- Machine hidden: just the sheet ---------- */
 
 .machine-off .machine {
-  justify-content: flex-end;
-  padding-bottom: 22px;
   pointer-events: none;
 }
 
@@ -320,7 +353,12 @@ textarea.type-text::placeholder {
   background: linear-gradient(to bottom, #3a3a3a, #111);
 }
 
+/* Same spot in every mode: centered, a fixed distance from the bottom of the screen */
 .controls {
+  position: absolute;
+  left: 50%;
+  bottom: 22px;
+  transform: translateX(-50%);
   display: flex;
   gap: 22px;
   transition: opacity 0.6s ease;
@@ -368,8 +406,20 @@ textarea.type-text::placeholder {
   box-shadow: 0 0 0 1.5px currentColor;
 }
 
+.key:disabled {
+  opacity: 0.3;
+  cursor: default;
+  pointer-events: none;
+}
+
 .key:active {
   transform: translateY(1px);
+}
+
+.key.is-active {
+  color: var(--control-strong);
+  border-color: var(--control-border-strong);
+  background: var(--control-hover-bg);
 }
 
 .key:focus-visible {
@@ -386,5 +436,95 @@ textarea.type-text::placeholder {
 
   .knob {
     display: none;
+  }
+}
+
+/* ---------- Retro machine: panoramic photo of an antique mechanism ---------- */
+
+.desk.retro {
+  /* The photo is 4:1; on narrow screens it is cropped around the center */
+  --machine-h: clamp(180px, 25vw, 42dvh);
+}
+
+/* The photo already shows its own carriage, scale and rollers */
+.desk.retro .bail,
+.desk.retro:not(.machine-off) .platen {
+  display: none;
+}
+
+.desk.retro:not(.machine-off) .machine {
+  width: 100vw;
+}
+
+.desk.retro:not(.machine-off) .machine::before {
+  border-radius: 0;
+}
+
+
+/* Over the busy photo the outline-only buttons get lost: give them a solid dark backing */
+.desk.retro:not(.machine-off) .key {
+  color: #f1e6cf;
+  border-color: rgba(241, 230, 207, 0.55);
+  background: rgba(12, 10, 8, 0.78);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+}
+
+.desk.retro:not(.machine-off) .key:hover {
+  color: #ffffff;
+  border-color: rgba(241, 230, 207, 0.9);
+  background: rgba(40, 33, 25, 0.92);
+}
+
+.desk.retro:not(.machine-off) .key.is-active {
+  color: #f5d99a;
+  border-color: #d9b56a;
+}
+
+/* ---------- Mobile and tablet: the whole screen is the sheet ---------- */
+
+@media (max-width: 1024px) {
+  :root {
+    --paper-w: 100vw;
+  }
+
+  .desk {
+    --sheet-bg: var(--paper);
+    background: var(--paper);
+  }
+
+  .desk.retro {
+    --sheet-bg: url("/papel-madera.jpg") top center / 1024px auto repeat, #c9a97a;
+    background: #c9a97a;
+  }
+
+  /* The paper texture scrolls with the text, like the sheet moving through the machine */
+  .scroller {
+    background: var(--sheet-bg);
+    background-attachment: local;
+  }
+
+  .paper {
+    min-height: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+}
+
+/* Seven controls have to fit across a phone */
+@media (max-width: 480px) {
+  .controls {
+    gap: 8px;
+  }
+
+  .key {
+    width: 32px;
+    height: 32px;
+  }
+
+  .key svg {
+    width: 15px;
+    height: 15px;
   }
 }

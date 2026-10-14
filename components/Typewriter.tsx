@@ -7,6 +7,29 @@ const THEME_KEY = "typewriter:theme";
 
 const MACHINE_KEY = "typewriter:machine";
 const MACHINE_OFF_KEY = "typewriter:machine-off";
+const RETRO_KEY = "typewriter:retro";
+
+// Shown the first time the app is opened, before anything has been saved.
+// Alfonsina Storni (1892–1938), "Peso ancestral" — public domain.
+const WELCOME_TEXT = `# Peso ancestral
+
+Tú me dijiste: no lloró mi padre;
+tú me dijiste: no lloró mi abuelo;
+no han llorado los hombres de mi raza,
+eran de acero.
+
+Así diciendo te brotó una lágrima
+y me cayó en la boca… más veneno
+yo no he bebido nunca en otro vaso
+así pequeño.
+
+Débil mujer, pobre mujer que entiende,
+dolor de siglos conocí al beberlo.
+Oh, el alma mía soportar no puede
+todo su peso.
+
+— Alfonsina Storni, *Irremediablemente* (1919)
+`;
 
 type Theme = "dark" | "light";
 
@@ -43,11 +66,14 @@ export default function Typewriter() {
   const [theme, setTheme] = useState<Theme>("dark");
   const [machineStyle, setMachineStyle] = useState<MachineStyle>("negra");
   const [machineOff, setMachineOff] = useState(false);
+  const [retro, setRetro] = useState(false);
 
   const scrollerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const mirrorRef = useRef<HTMLDivElement>(null);
   const machineRef = useRef<HTMLDivElement>(null);
+  // Becomes true once the draft has been restored and aligned; from then on alignment animates.
+  const settledRef = useRef(false);
 
   // Keep the line with the caret right above the paper bail, like a real carriage.
   const alignCaret = useCallback((smooth: boolean) => {
@@ -74,11 +100,12 @@ export default function Typewriter() {
   // Load the saved draft once on mount.
   useEffect(() => {
     try {
-      setText(localStorage.getItem(STORAGE_KEY) ?? "");
+      setText(localStorage.getItem(STORAGE_KEY) ?? WELCOME_TEXT);
       if (localStorage.getItem(THEME_KEY) === "light") setTheme("light");
       const savedStyle = localStorage.getItem(MACHINE_KEY);
       if (MACHINE_STYLES.includes(savedStyle as MachineStyle)) setMachineStyle(savedStyle as MachineStyle);
       setMachineOff(localStorage.getItem(MACHINE_OFF_KEY) === "1");
+      setRetro(localStorage.getItem(RETRO_KEY) === "1");
     } catch {}
     setLoaded(true);
     // Resume writing where the draft left off.
@@ -88,6 +115,7 @@ export default function Typewriter() {
       textarea.focus();
       textarea.setSelectionRange(textarea.value.length, textarea.value.length);
       alignCaret(false);
+      settledRef.current = true;
     });
   }, [alignCaret]);
 
@@ -108,8 +136,8 @@ export default function Typewriter() {
     if (!textarea) return;
     textarea.style.height = "auto";
     textarea.style.height = `${textarea.scrollHeight}px`;
-    alignCaret(loaded);
-  }, [text, loaded, alignCaret]);
+    alignCaret(settledRef.current);
+  }, [text, loaded, retro, alignCaret]);
 
   // Re-align when the caret moves (arrows, clicks) or the window changes size.
   useEffect(() => {
@@ -186,6 +214,14 @@ export default function Typewriter() {
     textareaRef.current?.focus();
   }, []);
 
+  const toggleRetro = useCallback(() => {
+    setRetro((current) => {
+      save(RETRO_KEY, current ? "0" : "1");
+      return !current;
+    });
+    textareaRef.current?.focus();
+  }, []);
+
   const toggleMachine = useCallback(() => {
     setMachineOff((current) => {
       save(MACHINE_OFF_KEY, current ? "0" : "1");
@@ -219,7 +255,7 @@ export default function Typewriter() {
 
   return (
     <main
-      className={`desk${typing ? " is-typing" : ""}${machineOff ? " machine-off" : ""}`}
+      className={`desk${typing ? " is-typing" : ""}${machineOff ? " machine-off" : ""}${retro ? " retro" : ""}`}
       data-theme={theme}
       data-machine={machineStyle}
     >
@@ -308,16 +344,32 @@ export default function Typewriter() {
               )}
             </svg>
           </button>
-          {!machineOff && (
-            <button
-              className="key"
-              onClick={nextMachineStyle}
-              title={`Estilo de máquina: ${machineStyle}`}
-              aria-label={`Cambiar estilo de máquina (actual: ${machineStyle})`}
-            >
-              <span className="swatch" />
-            </button>
-          )}
+          <button
+            className={`key${retro ? " is-active" : ""}`}
+            onClick={toggleRetro}
+            title={retro ? "Desactivar modo retro" : "Modo retro (papel madera)"}
+            aria-label="Modo retro"
+            aria-pressed={retro}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden>
+              <path d="M5 4h11l3 3v13H5z" />
+              <path d="M8.5 9.5h.01M12 8.5h.01M10 13h.01M14.5 12h.01M8.5 16.5h.01M13 16h.01M15.5 15.5h.01" />
+            </svg>
+          </button>
+          {/* Always rendered so the row never shifts; disabled when there is no machine color to change */}
+          <button
+            className="key"
+            onClick={nextMachineStyle}
+            disabled={machineOff || retro}
+            title={
+              machineOff || retro
+                ? "El color de máquina no aplica en este modo"
+                : `Estilo de máquina: ${machineStyle}`
+            }
+            aria-label={`Cambiar estilo de máquina (actual: ${machineStyle})`}
+          >
+            <span className="swatch" />
+          </button>
           <button
             className="key"
             onClick={toggleMachine}
